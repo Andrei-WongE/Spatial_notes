@@ -18,7 +18,7 @@ format:
 # Fold code (initially hidden)
     code-fold: true
 # Allow to download code
-    code_download: true
+    code_download: yes
 # Tables printed as HTML tables with support for pagination
     df_print: paged
 # Text for footer
