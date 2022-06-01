@@ -86,7 +86,7 @@ pacman::p_update()         # Update out-of-date packages
                         ,fig.path  = "Figs/"
                         ,dpi       = 600
                         ,fig.width = 12
-                        ,fig.hight = 9
+                        ,fig.hight = 12
   #suppress any R warnings or messages in the final document
                         ,warning   = FALSE 
                         ,message   = FALSE
