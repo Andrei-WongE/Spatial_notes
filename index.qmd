@@ -1,12 +1,14 @@
 ---
 title: "OSM_Notes"
 author: "[Andrei Wong](https://github.com/Andrei-WongE)"
-date: "`r Sys.Date()`"
+date: "June 1, 2022"
+
 format:
   html:
 # Add table of contents
     toc: true
     toc_float: true
+    toc-location: left
 # css selectors to change the header and TOC styles
     css: headers.css
     number-sections: true
@@ -21,17 +23,24 @@ format:
     code_download: yes
 # Tables printed as HTML tables with support for pagination
     df_print: paged
-# Text for footer
-    include-after-body: footer.html
+# Table options    
+    table-captions: true
+    tbl-cap-location: margin
 # Places footnotes and cited sources in the margin
 # other layout options (for example placing a 
 # figure in the margin) will be set on per element
 # using cap-location margin
-reference-location: margin
+    reference-location: margin
+# Text for footer
+    include-after-body: footer.html
 # Allow for highlighting text. \hl{highlight} text inline.Or \hl{\textbf{highlight}} with bold face.
 # Allows fort commenting using hypothesis
 comments:
   hypothesis: true
+  
+execute:
+  warning: false
+  message: false
 ---
 
 # Set-up
@@ -44,60 +53,55 @@ knitted_with <- packageVersion("knitr")
 knitted_doc_url <- downlit::autolink_url("knitr::knit()")
 ```
 
-Note prepared on `r knitted_when` from `r knitted_where` with knitr version `r knitted_with`.
+Note updated on `r knitted_when` from `r knitted_where` with knitr version `r knitted_with`.
 
-General set-up of the program.
+::: {.callout-note collapse="false"}
+## General set-up of the program.
+These notes make use of the following R packages and general set-up.
+:::
 
 ```{r Set-up}
-#|  label: set-up
-#|  include: false
+#| label: set-up
 
-if (!require("pacman")) {
-install.packages("pacman")
-}
-pacman::p_load(tidyverse 
-               ,tidylog
-               ,Cairo
-               ,here
-               ,dplyr 
-               ,ggplot2
-               ,ggnewscale # For multiple fill and colour scales in ggplot2
-               ,ggsn       # North Symbols and Scale Bars for Maps
-               ,osmdata    # For downloading and using data from OSM
-               ,sf
-               ,rvest      # For Web scrapping
-               ,DT         # R interface to the JavaScript library DataTables
-               ,downlit    # For syntax highlighting and automatic linking
-               ,git2r      # Provides access to 'Git' repositories
-               ,xfun       # For alternative Session Info
-               )
+  if (!require("pacman")) {
+  install.packages("pacman")
+  }
 
-pacman::p_update()         # Update out-of-date packages
-```
-
-```{r General-options}
-#|  label: General-options
-#|  include: false
-
-    
-  options(scipen = 100, digits = 2) # Prefer non-scientific notation
+  pacman::p_load(tidyverse 
+                 ,tidylog
+                 ,Cairo
+                 ,here
+                 ,dplyr
+                 ,crsuggest  # Suggest CRS information for spatial data
+                 ,ggplot2
+                 ,ggnewscale # For multiple fill and colour scales in ggplot2
+                 ,ggsn       # North Symbols and Scale Bars for Maps
+                 ,osmdata    # For downloading and using data from OSM
+                 ,sf
+                 ,rvest      # For Web scrapping
+                 ,DT         # R interface to the JavaScript library DataTables
+                 ,downlit    # For syntax highlighting and automatic linking
+                 ,git2r      # Provides access to 'Git' repositories
+                 ,xfun       # For alternative Session Info
+                 )
   
-  knitr::opts_chunk$set( dev       = "CairoPNG" #alpha transparency in png
+  pacman::p_update()         # Update out-of-date packages
+
+  options(scipen = 100, digits = 2)             # Prefer non-scientific notation
+  
+  knitr::opts_chunk$set( dev       = "CairoPNG" # Alpha transparency in png
                         ,fig.path  = "Figs/"
                         ,dpi       = 600
                         ,fig.width = 12
                         ,fig.hight = 12
-  #suppress any R warnings or messages in the final document
-                        ,warning   = FALSE 
-                        ,message   = FALSE
   # Automatically formatting code using styler
                         ,tidy      = "styler"
 )
-  
 
 ```
 
 # Obtaining data
+Using `osmdata` package we can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to raster tiles.  
 
 ```{r data}
 #| label: data
@@ -110,7 +114,7 @@ Lima <-
    opq(timeout = 25*100) %>%           # overpass query
    add_osm_feature(                    # retrieve administrative boundaries
      key = "admin_level"
-    ,value = "5"                       # boundary box at the regional level
+    ,value = "5"                       # boundary box at the met level
   ) %>%
   osmdata_sf()                         # import as an sf object
 
@@ -126,11 +130,30 @@ Lima <-
 Lima_multipolygons <- Lima %>%                     
   osm_multipolygons(.$osm_polygons$osm_id) %>%  # extracting polygons
   dplyr::filter(name == "Lima Metropolitana") %>% # only at specific city level
-  dplyr::select(geometry) %>%          # select polygon geometry information
-  st_transform(24892)                  # convert the GIS coordinates to CRS
+  dplyr::select(geometry) 
+```
+`suggest_crs()` from the **crsuggest package** returns the top 10 matches for a given input spatial dataset enabeling to browse the returned CRS option and use the EPSG/proj4string codes in your analysis. This package is usefull for customizing arguments (gcs and measurement units) as guessing the CRS of a dataset without projection information.
+
+```{r crs}
+#| label: crs
+#| code-fold: show
+
+possible_crs <- suggest_crs(Lima_multipolygons)
+glimpse(possible_crs)
+
+```
+Now we can covert the GIS coordinates to CRS using `st_transform`
+
+```{r object}
+#| label: object
+#| code-fold: show
+
+Lima_multipolygons %>%      # select polygon geometry information
+  st_transform(24892)       # convert the GIS coordinates to CRS
 
 Lima_multipolygons
 ```
+
 
 See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys.
 
@@ -138,7 +161,7 @@ See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_o
 ```{r tbl-osm-features}
 #| label: tbl-osm-features
 #| tbl-cap: "OSM features table"
-#| warning: false
+#| cache: true
 #| code-fold: show
 
 page <- read_html("https://wiki.openstreetmap.org/wiki/Map_features")
@@ -160,7 +183,7 @@ datatable(features_list,
 )
 ```
 
-In order to select [Features](https://wiki.openstreetmap.org/wiki/Map_Features) there is a list available with `r nrow(features_list)` features, as shown in @tbl-osm-features. We can also use the available_features( ) function that returns a list of available OSM features that have different tags.
+In order to select [Features](https://wiki.openstreetmap.org/wiki/Map_Features) there is a list available with `r nrow(features_list)` features, as shown in @tbl-osm-features. We can also use the `available_features( )` function that returns a list of available OSM features that have different tags.
 
 If we look to the internal structure of the resulting object, we obtain:
 
@@ -243,6 +266,7 @@ All code for this report
 
 ```{r ref.label = knitr::all_labels()}
 #| eval: false
+#| code-fold: false
 ```
 
 </details>
@@ -256,6 +280,8 @@ Reproducibility receipt
 </summary>
 
 ```{r Reproducibility receipt}
+#| echo: false
+
       ## Datetime
       Sys.time()
   
