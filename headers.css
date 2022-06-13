@@ -1,22 +1,37 @@
+/*Title properties*/
+.title {
+  text-decoration: overline underline;
+  border-bottom: 2px solid currentColor;
+  display: inline-block;
+  line-height: 0.85;
+  text-shadow:
+    2px 2px white,
+    2px -2px white,
+    -2px 2px white,
+    -2px -2px white;
+}
+
+/*Colour of headers*/
 h1:not(.title), #TOC > ul.tocify-header > li:first-child {
-  color: FireBrick;
+  color: #9a1c1c;
   font-weight: bold;
 }
 
 h2, #TOC ul.tocify-subheader[data-tag="2"] > li.tocify-item {
-  color: MidnightBlue; 
+  color: #32557f;
 }
 
 h3, #TOC ul.tocify-subheader[data-tag="3"] > li.tocify-item {
-  color: MidnightBlue;
+  color: #32557f;
   font-style: italic;
 }
 
+/*Creating space between headers*/
 h1, .h1, h2, .h2, h3, .h3 {
     margin-top: 84px;
 }
 
-/*watermark saying “DRAFT” in pale letters that would always be visible for readers, including at the end <div class="watermark">DRAFT</div> */
+/*Watermark saying “DRAFT” in pale letters, always visible for readers, include at the end: <div class="watermark">DRAFT</div> */
 .watermark {
   opacity: 0.2;
   position: fixed;
@@ -24,4 +39,14 @@ h1, .h1, h2, .h2, h3, .h3 {
   left: 50%;
   font-size: 500%;
   color: #00407d;
+}
+
+/*Background colour, for more options see: https://css-tricks.com/almanac/properties/b/background/,https://www.color-hex.com/color/fff2cc and https://uigradients.com, TRY: fef2d0*/
+body {
+  background: #fffbef;|
+}
+
+/*Higlight text colour.*/
+mark {
+  background: #ebc699
 }

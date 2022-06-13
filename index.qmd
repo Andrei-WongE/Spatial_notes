@@ -16,7 +16,7 @@ format:
     link-external-icon: false
     link-external-newwindow: true
     theme: lux
-    highlight: tango
+    highlight-style: github
 # Fold code (initially hidden)
     code-fold: true
 # Allow to download code
@@ -31,13 +31,14 @@ format:
 # figure in the margin) will be set on per element
 # using cap-location margin
     reference-location: margin
+    citation-location: margin 
 # Text for footer
     include-after-body: footer.html
 # Allow for highlighting text. \hl{highlight} text inline.Or \hl{\textbf{highlight}} with bold face.
 # Allows fort commenting using hypothesis
 comments:
   hypothesis: true
-  
+
 execute:
   warning: false
   message: false
@@ -78,6 +79,7 @@ These notes make use of the following R packages and general set-up.
                  ,ggsn       # North Symbols and Scale Bars for Maps
                  ,osmdata    # For downloading and using data from OSM
                  ,sf
+                 ,knitr
                  ,rvest      # For Web scrapping
                  ,DT         # R interface to the JavaScript library DataTables
                  ,downlit    # For syntax highlighting and automatic linking
@@ -85,7 +87,7 @@ These notes make use of the following R packages and general set-up.
                  ,xfun       # For alternative Session Info
                  )
   
-  pacman::p_update()         # Update out-of-date packages
+  #pacman::p_update()         # Update out-of-date packages
 
   options(scipen = 100, digits = 2)             # Prefer non-scientific notation
   
@@ -101,24 +103,25 @@ These notes make use of the following R packages and general set-up.
 ```
 
 # Obtaining data
-Using `osmdata` package we can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to raster tiles.  
+Using `osmdata` package you can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to <mark >raster tiles</mark>.
+[For more information about `OpenStreetMap` see http://blog.fellstat.com/?cat=15].{.aside}
 
 ```{r data}
 #| label: data
 #| cache: true
 #| code-fold: show
 
-
 Lima <-
-   getbb("Lima Metropolitana") %>%     # obtaining boundaries
-   opq(timeout = 25*100) %>%           # overpass query
-   add_osm_feature(                    # retrieve administrative boundaries
+   getbb("Lima Metropolitana") |>     # obtaining boundaries
+   opq(timeout = 25*100) |>           # overpass query
+   add_osm_feature(                   # retrieve administrative boundaries
      key = "admin_level"
-    ,value = "5"                       # boundary box at the met level
-  ) %>%
-  osmdata_sf()                         # import as an sf object
+    ,value = "5"                      # boundary box at the met level
+  ) |>
+  osmdata_sf()                        # import as an sf object
 
 ```
+Dowloaded data timestamp: `r Lima$meta$timestamp`.
 
 # Obtaining boundaries
 
@@ -127,19 +130,21 @@ Lima <-
 #| cache: true
 #| code-fold: show
 
-Lima_multipolygons <- Lima %>%                     
-  osm_multipolygons(.$osm_polygons$osm_id) %>%  # extracting polygons
-  dplyr::filter(name == "Lima Metropolitana") %>% # only at specific city level
+Lima_multipolygons <- Lima |>                     
+(\(x) osm_multipolygons(x, x$osm_polygons$osm_id)) () |>  # extracting polygons
+  dplyr::filter(name == "Lima Metropolitana") |> # only at specific city level
   dplyr::select(geometry) 
+
 ```
 `suggest_crs()` from the **crsuggest package** returns the top 10 matches for a given input spatial dataset enabeling to browse the returned CRS option and use the EPSG/proj4string codes in your analysis. This package is usefull for customizing arguments (gcs and measurement units) as guessing the CRS of a dataset without projection information.
 
 ```{r crs}
 #| label: crs
 #| code-fold: show
+#| tbl-cap: "Possible CRS"
 
 possible_crs <- suggest_crs(Lima_multipolygons)
-glimpse(possible_crs)
+kable(head(possible_crs, "simple"))
 
 ```
 Now we can covert the GIS coordinates to CRS using `st_transform`
@@ -148,21 +153,20 @@ Now we can covert the GIS coordinates to CRS using `st_transform`
 #| label: object
 #| code-fold: show
 
-Lima_multipolygons %>%      # select polygon geometry information
-  st_transform(24892)       # convert the GIS coordinates to CRS
+Lima_multipolygons <- Lima_multipolygons |> 
+  st_transform(24892) # convert the GIS coordinates to CRS
 
 Lima_multipolygons
 ```
 
 
 See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys.
-
+Searh for feature in the following table.
 
 ```{r tbl-osm-features}
 #| label: tbl-osm-features
 #| tbl-cap: "OSM features table"
 #| cache: true
-#| code-fold: show
 
 page <- read_html("https://wiki.openstreetmap.org/wiki/Map_features")
 
@@ -211,15 +215,14 @@ ggplot(Lima_multipolygons, fill = NA) +
 
 # Adding data: Streets, buildings, and XXX
 
-```{r first-plot-roads}
+```{r obtaining-data-roads}
 #| label: adding-data-roads
 #| cache: true
 #| code-fold: show
 
-
 roads <-
- getbb("Lima Metropolitana ") %>% 
- opq(timeout = 25*100) %>%
+ getbb("Lima Metropolitana") %>% 
+ opq(timeout = 25*110) %>%
  add_osm_feature(                   # requesting features related to highway
      key = "highway" 
     ,value = c(
@@ -229,30 +232,46 @@ roads <-
       # ,"tertiary"
       )
   ) %>% 
-  osmdata_sf() %>% 
-  osm_lines(.$osm_lines$osm_id) %>% # which means using other type of geometry
-  dplyr::select(geometry) %>%
-  sf::st_transform(24892) %>% 
-  sf::st_intersection(Lima_multipolygons) %>% # only highways that are in the city
-  dplyr::filter(
-    sf::st_is(., "LINESTRING")     # assure that only line geometry        
-    )
+  osmdata_sf()
+
+```
+
+```{r adding-data-roads}
+#| label: adding-data-roads
+#| cache: true
+#| code-fold: show
+
+roads_sf <- roads |>  
+  (\(x) osm_lines(x, x$osm_lines$osm_id))() |>
+  # which means using other type of geometry
+  dplyr::select(geometry) |>
+  st_transform(24892) |> 
+  st_intersection(Lima_multipolygons)            # only highways in the city
+
+roads_sf <- roads_sf |>
+  dplyr::filter(st_is_type(geometry, c("LINESTRING"))) # assure only line geometry
+
 ```
 
 ```{r roads-plot}
 #| label: roads-plot
 #| echo: false
+#| fig-cap: "Adding layer of roads to map."
+#| cap-location: margin
 #| code-fold: show
 
 ggplot() +
   #---The layer added later will come on top of the preceding layers---#
   geom_sf(data = Lima_multipolygons) +
-  geom_sf(data = roads) +
+  geom_sf(data = roads_sf) +
   ggsn::blank()
 
 ```
 
 <!-- ![Roads plot.](r`knitr::fig_chunk('Figs/roads-plot','png')`) -->
+
+# Visualize data with sfmap, ggplot2, ggmap and leaflet
+
 
 # Appendix:
 

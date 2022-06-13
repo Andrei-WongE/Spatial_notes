@@ -120,7 +120,8 @@
 <li><a href="#obtaining-data" class="nav-link" data-scroll-target="#obtaining-data"> <span class="header-section-number">2</span> Obtaining data</a></li>
 <li><a href="#obtaining-boundaries" class="nav-link" data-scroll-target="#obtaining-boundaries"> <span class="header-section-number">3</span> Obtaining boundaries</a></li>
 <li><a href="#adding-data-streets-buildings-and-xxx" class="nav-link" data-scroll-target="#adding-data-streets-buildings-and-xxx"> <span class="header-section-number">4</span> Adding data: Streets, buildings, and XXX</a></li>
-<li><a href="#appendix" class="nav-link" data-scroll-target="#appendix"> <span class="header-section-number">5</span> Appendix:</a></li>
+<li><a href="#visualize-data-with-sfmap-ggplot2-ggmap-and-leaflet" class="nav-link" data-scroll-target="#visualize-data-with-sfmap-ggplot2-ggmap-and-leaflet"> <span class="header-section-number">5</span> Visualize data with sfmap, ggplot2, ggmap and leaflet</a></li>
+<li><a href="#appendix" class="nav-link" data-scroll-target="#appendix"> <span class="header-section-number">6</span> Appendix:</a></li>
 </ul>
 </nav>
 </div>
@@ -138,7 +139,7 @@
 <div class="cell">
 
 </div>
-<p>Note prepared on 2022-06-03 from index.qmd with knitr version 1.39.</p>
+<p>Note updated on 2022-06-07 from index.qmd with knitr version 1.39.</p>
 <div class="callout-note callout callout-style-default callout-captioned">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target="#callout-1" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -180,7 +181,7 @@ General set-up of the program.
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>                 ,xfun       <span class="co"># For alternative Session Info</span></span>
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>                 )</span>
 <span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  pacman<span class="sc">::</span><span class="fu">p_update</span>()         <span class="co"># Update out-of-date packages</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#pacman::p_update()         # Update out-of-date packages</span></span>
 <span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">100</span>, <span class="at">digits =</span> <span class="dv">2</span>)             <span class="co"># Prefer non-scientific notation</span></span>
 <span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -197,7 +198,7 @@ General set-up of the program.
 </section>
 <section id="obtaining-data" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Obtaining data</h1>
-<p>Using <code>osmdata</code> package we can download data from <a href="https://www.openstreetmap.org/about">OSM</a>. Consider that this package provides access to vector data while the <code>OpenStreetMap</code> package to raster tiles.</p>
+<p>Using <code>osmdata</code> package we can download data from <a href="https://www.openstreetmap.org/about">OSM</a>. Consider that this package provides access to vector data while the <code>OpenStreetMap</code> package to <mark>raster tiles</mark>. [For more information about <code>OpenStreetMap</code> see http://blog.fellstat.com/?cat=15].{.aside}</p>
 <div class="cell" data-hash="index_cache/html/data_1a913953342311e24b06e5abfb9e8f7c">
 <details open="">
 <summary>Code</summary>
@@ -227,8 +228,8 @@ General set-up of the program.
 <div class="cell">
 <details open="">
 <summary>Code</summary>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r cell-code code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>possible_crs <span class="ot">&lt;-</span> <span class="fu">suggest_crs</span>(Lima_multipolygons)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(possible_crs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r cell-code number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>possible_crs <span class="ot">&lt;-</span> <span class="fu">suggest_crs</span>(Lima_multipolygons)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">glimpse</span>(possible_crs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-stdout">
 <pre><code>Rows: 10
@@ -497,7 +498,7 @@ Geodetic CRS:  WGS 84
 </div>
 <!-- ![First plot.](r`knitr::fig_chunk('Figs/first-plot','png')`) -->
 </section>
-<section id="adding-data-streets-buildings-and-xxx" class="level1" data-number="4">
+<section id="adding-data-streets-buildings-and-xxx" class="level1 page-columns page-full" data-number="4">
 <h1 data-number="4"><span class="header-section-number">4</span> Adding data: Streets, buildings, and XXX</h1>
 <div class="cell" data-hash="index_cache/html/adding-data-roads_d50bd45d715081334e8afe8047f41b11">
 <details open="">
@@ -524,15 +525,23 @@ Geodetic CRS:  WGS 84
 <span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell">
-<div class="cell-output-display">
-<p><img src="Figs/roads-plot-1.png" class="img-fluid" width="7200"></p>
+<div class="cell page-columns page-full">
+<div class="cell-output-display page-columns page-full">
+<div class="quarto-figure quarto-figure-center page-columns page-full">
+<figure class="figure page-columns page-full">
+<p><img src="Figs/roads-plot-1.png" class="img-fluid figure-img" width="7200"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption margin-caption">Adding layer of roads to map.</figcaption><p></p>
+</figure>
+</div>
 </div>
 </div>
 <!-- ![Roads plot.](r`knitr::fig_chunk('Figs/roads-plot','png')`) -->
 </section>
-<section id="appendix" class="level1" data-number="5">
-<h1 data-number="5"><span class="header-section-number">5</span> Appendix:</h1>
+<section id="visualize-data-with-sfmap-ggplot2-ggmap-and-leaflet" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Visualize data with sfmap, ggplot2, ggmap and leaflet</h1>
+</section>
+<section id="appendix" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Appendix:</h1>
 <details>
 <summary>
 <p>All code for this report</p>
@@ -565,7 +574,7 @@ Geodetic CRS:  WGS 84
 <span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  , xfun <span class="co"># For alternative Session Info</span></span>
 <span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_update</span>() <span class="co"># Update out-of-date packages</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co"># pacman::p_update()         # Update out-of-date packages</span></span>
 <span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">100</span>, <span class="at">digits =</span> <span class="dv">2</span>) <span class="co"># Prefer non-scientific notation</span></span>
 <span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a></span>
@@ -666,12 +675,12 @@ Geodetic CRS:  WGS 84
 </summary>
 <div class="cell">
 <div class="cell-output-stdout">
-<pre><code>[1] "2022-06-03 11:52:13 -05"</code></pre>
+<pre><code>[1] "2022-06-07 16:37:55 -05"</code></pre>
 </div>
 <div class="cell-output-stdout">
 <pre><code>Local:    origin D:/Documents/R/R_projects/OSM_Lima
 Remote:   origin @ origin (https://github.com/Andrei-WongE/Spatial_notes.git)
-Head:     [59d63be] 2022-06-01: Adding all figs</code></pre>
+Head:     [374484f] 2022-06-03: Merge branch 'origin' of https://github.com/Andrei-WongE/Spatial_notes into origin</code></pre>
 </div>
 <div class="cell-output-stdout">
 <pre><code>R version 4.1.2 (2021-11-01)
@@ -694,7 +703,7 @@ Package version:
   codetools_0.2-18        colorspace_2.0-3        compiler_4.1.2         
   cpp11_0.4.2             crayon_1.5.1            crosstalk_1.2.0        
   crsmeta_0.3.0           crsuggest_0.3.1         curl_4.3.2             
-  data.table_1.14.2       DBI_1.1.2               dbplyr_2.1.1           
+  data.table_1.14.2       DBI_1.1.2               dbplyr_2.2.0           
   desc_1.4.1              digest_0.6.29           downlit_0.4.0          
   dplyr_1.0.9             DT_0.23                 dtplyr_1.2.1           
   e1071_1.7-9             ellipsis_0.3.2          evaluate_0.15          
@@ -761,17 +770,26 @@ DRAFT
 <p style="text-align: center;">A work by <a href="https://github.com/Andrei-WongE/">Andrei Wong Espejo</a></p>
 <p style="text-align: center;"><span style="color: #808080;"><em>my email</em></span></p>
 
+<!-- Add actions -->
+<p style="text-align: center;"><span style="color:#808080; font-size: 15px;"><em>
+  Corrections: If you see mistakes or want to suggest changes, please 
+  <a href="https://github.com/Andrei-WongE/Spatial_notes/issues/new">
+  create an issue</a></em></span></p><a href="https://github.com/Andrei-WongE/Spatial_notes/issues/new">
+<p></p>
+
+
 <!-- Add icon library -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 <!-- Add font awesome icons -->
-<p style="text-align: center;">
-    <a href="https://twitter.com/Andrei_WongE" class="fa fa-twitter"></a>
+</a><p style="text-align: center;"><a href="https://github.com/Andrei-WongE/Spatial_notes/issues/new">
+    </a><a href="https://twitter.com/Andrei_WongE" class="fa fa-twitter"></a>
     <a href="https://www.linkedin.com/in/andreiwe/" class="fa fa-linkedin"></a>
     <a href="https://github.com/Andrei-WongE/" class="fa fa-github"></a>
 </p>
 
 &nbsp;
+
 <script type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const icon = "";
