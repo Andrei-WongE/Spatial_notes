@@ -1,6 +1,18 @@
-.Rproj.user
+# History files
 .Rhistory
+.Rapp.history
+
+# RStudio files
+.Rproj.user
+
+# Session Data files
 .RData
+.RDataTmp
+
+# User-specific files
 .Ruserdata
+
+# Data folder
+/data/
 
 /.quarto/
