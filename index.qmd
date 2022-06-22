@@ -1,10 +1,14 @@
 ---
-title: "OSM_Notes"
+title: "Spatial data: OSM_Notes"
 author: "[Andrei Wong](https://github.com/Andrei-WongE)"
 date: "June 1, 2022"
 
 format:
   html:
+#Basic options
+    fontcolor: black
+    # By default, smooth scroll is not enabled
+    smooth-scroll: true
 # Add table of contents
     toc: true
     toc_float: true
@@ -42,6 +46,7 @@ comments:
 execute:
   warning: false
   message: false
+  cache: true
 ---
 
 # Set-up
@@ -78,7 +83,7 @@ These notes make use of the following R packages and general set-up.
                  ,ggnewscale # For multiple fill and colour scales in ggplot2
                  ,ggsn       # North Symbols and Scale Bars for Maps
                  ,osmdata    # For downloading and using data from OSM
-                 ,sf
+                 ,sf         # DONT'T FORGET uses the s2geometry library
                  ,knitr
                  ,rvest      # For Web scrapping
                  ,DT         # R interface to the JavaScript library DataTables
@@ -104,16 +109,15 @@ These notes make use of the following R packages and general set-up.
 
 # Obtaining data
 Using `osmdata` package you can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to <mark >raster tiles</mark>.
-[For more information about `OpenStreetMap` see http://blog.fellstat.com/?cat=15].{.aside}
+For more information about `OpenStreetMap` see [here](http://blog.fellstat.com/?cat=15).
 
 ```{r data}
 #| label: data
-#| cache: true
 #| code-fold: show
 
 Lima <-
    getbb("Lima Metropolitana") |>     # obtaining boundaries
-   opq(timeout = 25*100) |>           # overpass query
+   opq(timeout = 20*100) |>           # overpass query
    add_osm_feature(                   # retrieve administrative boundaries
      key = "admin_level"
     ,value = "5"                      # boundary box at the met level
@@ -127,7 +131,6 @@ Dowloaded data timestamp: `r Lima$meta$timestamp`.
 
 ```{r boudnaries}
 #| label: boundaries
-#| cache: true
 #| code-fold: show
 
 Lima_multipolygons <- Lima |>                     
@@ -153,20 +156,22 @@ Now we can covert the GIS coordinates to CRS using `st_transform`
 #| label: object
 #| code-fold: show
 
-Lima_multipolygons <- Lima_multipolygons |> 
-  st_transform(24892) # convert the GIS coordinates to CRS
+# convert the GIS coordinates to CRS
+Lima_multipolygons <- st_transform(Lima_multipolygons, 24892) 
 
 Lima_multipolygons
 ```
 
 
-See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys.
-Searh for feature in the following table.
+See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). 
+See ESPG codes on [spatialreference.org](https://spatialreference.org/ref/epsg/).
+See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys.
+Search for feature in the following table.
 
 ```{r tbl-osm-features}
 #| label: tbl-osm-features
 #| tbl-cap: "OSM features table"
-#| cache: true
+#| caption: OSM_features
 
 page <- read_html("https://wiki.openstreetmap.org/wiki/Map_features")
 
@@ -187,7 +192,7 @@ datatable(features_list,
 )
 ```
 
-In order to select [Features](https://wiki.openstreetmap.org/wiki/Map_Features) there is a list available with `r nrow(features_list)` features, as shown in @tbl-osm-features. We can also use the `available_features( )` function that returns a list of available OSM features that have different tags.
+In order to select [Features](https://wiki.openstreetmap.org/wiki/Map_Features) there is a list available with `r nrow(features_list)` features, as shown in @OSM_features. We can also use the `available_features( )` function that returns a list of available OSM features that have different tags.
 
 If we look to the internal structure of the resulting object, we obtain:
 
@@ -213,16 +218,15 @@ ggplot(Lima_multipolygons, fill = NA) +
 
 <!-- ![First plot.](r`knitr::fig_chunk('Figs/first-plot','png')`) -->
 
-# Adding data: Streets, buildings, and XXX
+# Adding data: Streets, buildings, and population density
 
 ```{r obtaining-data-roads}
 #| label: adding-data-roads
-#| cache: true
 #| code-fold: show
 
 roads <-
  getbb("Lima Metropolitana") %>% 
- opq(timeout = 25*110) %>%
+ opq(timeout = 20*110) %>%
  add_osm_feature(                   # requesting features related to highway
      key = "highway" 
     ,value = c(
@@ -236,9 +240,8 @@ roads <-
 
 ```
 
-```{r adding-data-roads}
-#| label: adding-data-roads
-#| cache: true
+```{r wrangling-data-roads}
+#| label: wrangling-data-roads
 #| code-fold: show
 
 roads_sf <- roads |>  
@@ -246,10 +249,8 @@ roads_sf <- roads |>
   # which means using other type of geometry
   dplyr::select(geometry) |>
   st_transform(24892) |> 
-  st_intersection(Lima_multipolygons)            # only highways in the city
-
-roads_sf <- roads_sf |>
-  dplyr::filter(st_is_type(geometry, c("LINESTRING"))) # assure only line geometry
+  st_intersection(Lima_multipolygons) |>          # only highways in the city
+  dplyr::filter(st_is(geometry, c("LINESTRING"))) # assure only line geometry
 
 ```
 
@@ -268,9 +269,121 @@ ggplot() +
 
 ```
 
+```{r obtaining-buildings-data}
+#| label: adding-data-roads
+#| code-fold: show
+
+buildings_sf <-
+  getbb("Lima Metropolitana") |> 
+  opq(timeout = 20*100) |> 
+  add_osm_feature(
+    key = "building", 
+    value = c(
+      # Accommodation
+      "apartments", "house", "residential" 
+      #Commercial
+      , "commercial", "office", "retail", "supermarket"
+      # Religious
+      ,"cathedral","church"
+      # Civic/amenity
+      , "civic", "college", "government", "	hospital", "public", "transportation", "university"
+      # Other buildings
+      , "bridge"
+    )
+  ) |> 
+  osmdata_sf() 
+
+buildings_sf <- buildings_sf |>  
+  (\(x) osm_polygons(x, x$osm_polygons$osm_id))() |> 
+  dplyr::select(geometry) |> 
+  st_transform(24892) |>  
+  st_intersection(Lima_multipolygons)
+```
+
+```{r}
+
+ggplot() +
+  #---The layer added later will come on top of the preceding layers---#
+  geom_sf(data = Lima_multipolygons) +
+  geom_sf(data = buildings_sf) +
+  ggsn::blank()
+
+```
+
+For obtaining population data we use data from the National Institute of Statistics and Informatics (INEI, 2018).
+
+```{r obtaining-population-data}
+#| label: otaining-population-data
+#| code-fold: show
+
+  population <- st_as_sf(st_read(here("data", "EstratoLimaMetropolitanashp.shp"))) 
+
+```
+Population data is in geodetic CRS, we need to transform this data to Projected CRS. More details about the diffence between these systems [here](https://www.earthdatascience.org/courses/use-data-open-source-python/intro-vector-data-python/spatial-data-vector-shapefiles/geographic-vs-projected-coordinate-reference-systems-python/).
+
+```{r wrangling-population-data}
+#| label: wrangling-population-data
+#| code-fold: show
+
+population_sf <- population |> 
+  st_transform(24892) |> # Extra care is needed with the ESRI Shapefile format, because WKT1 does not store axis order unambigiously.
+  st_intersection(Lima_multipolygons)
+
+```
+
+```{r population-plot}
+#| label: population-plot
+#| echo: false
+#| fig-cap: "Adding layer of population to map."
+#| cap-location: margin
+#| code-fold: show
+
+ggplot() +
+  #---The layer added later will come on top of the preceding layers---#
+  geom_sf(data = Lima_multipolygons) +
+  geom_sf(data = population_sf) +
+  ggsn::blank()
+
+```
+
 <!-- ![Roads plot.](r`knitr::fig_chunk('Figs/roads-plot','png')`) -->
 
-# Visualize data with sfmap, ggplot2, ggmap and leaflet
+# Visualize data with sfmap, ggplot2, ggmap, tmap and leaflet
+
+::: {.panel-tabset}
+## sfmap
+
+```{r}
+
+```
+## ggplot2
+
+```{r}
+ggplot() +
+  geom_sf(data = Lima_multipolygons) +
+  geom_sf(
+    data = population_sf,
+    aes(fill = layer,
+        alpha = 0.4), 
+    color = NA
+  ) +
+  scale_fill_distiller(
+    palette = "Greens", 
+    direction = 1,
+    guide = FALSE
+  ) +
+  geom_sf(data = roads_sf) +
+  geom_sf(data = buildings_sf) +
+  theme(legend.position = "none") +
+  ggsn::blank() 
+
+```
+
+## ggmap
+## tmap
+## leaflet
+
+:::
 
 
 # Appendix:

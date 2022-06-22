@@ -1,9 +1,11 @@
 /*Title properties*/
 .title {
   text-decoration: overline underline;
-  border-bottom: 2px solid currentColor;
+  /*border-bottom: 2px solid currentColor;*/
+  /*text-underline-offset: 0.35em; DOES NOT WORK*/
   display: inline-block;
-  line-height: 0.85;
+  /*line-height: 0.95;*/
+  white-space: nowrap;
   text-shadow:
     2px 2px white,
     2px -2px white,
@@ -43,7 +45,7 @@ h1, .h1, h2, .h2, h3, .h3 {
 
 /*Background colour, for more options see: https://css-tricks.com/almanac/properties/b/background/,https://www.color-hex.com/color/fff2cc and https://uigradients.com, TRY: fef2d0*/
 body {
-  background: #fffbef;|
+  background: #fffbef;
 }
 
 /*Higlight text colour.*/
