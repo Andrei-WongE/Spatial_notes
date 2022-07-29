@@ -5,7 +5,7 @@ date: "June 1, 2022"
 
 format:
   html:
-#Basic options
+# Basic options
     fontcolor: black
     # By default, smooth scroll is not enabled
     smooth-scroll: true
@@ -25,6 +25,8 @@ format:
     code-fold: true
 # Allow to download code
     code_download: yes
+# Code link to documentation   
+    code-link: true
 # Tables printed as HTML tables with support for pagination
     df_print: paged
 # Table options    
@@ -129,7 +131,7 @@ Dowloaded data timestamp: `r Lima$meta$timestamp`.
 
 # Obtaining boundaries
 
-```{r boudnaries}
+```{r boudndaries}
 #| label: boundaries
 #| code-fold: show
 
@@ -300,7 +302,12 @@ buildings_sf <- buildings_sf |>
   st_intersection(Lima_multipolygons)
 ```
 
-```{r}
+```{r buildings-plot}
+#| label: buildings-plot
+#| echo: false
+#| fig-cap: "Adding layer of buildings to map."
+#| cap-location: margin
+#| code-fold: show
 
 ggplot() +
   #---The layer added later will come on top of the preceding layers---#
@@ -319,7 +326,7 @@ For obtaining population data we use data from the National Institute of Statist
   population <- st_as_sf(st_read(here("data", "EstratoLimaMetropolitanashp.shp"))) 
 
 ```
-Population data is in geodetic CRS, we need to transform this data to Projected CRS. More details about the diffence between these systems [here](https://www.earthdatascience.org/courses/use-data-open-source-python/intro-vector-data-python/spatial-data-vector-shapefiles/geographic-vs-projected-coordinate-reference-systems-python/).
+Population data is in geodetic CRS, we need to transform this data to Projected CRS. More details about the difference between these systems [here](https://www.earthdatascience.org/courses/use-data-open-source-python/intro-vector-data-python/spatial-data-vector-shapefiles/geographic-vs-projected-coordinate-reference-systems-python/).
 
 ```{r wrangling-population-data}
 #| label: wrangling-population-data
@@ -341,10 +348,45 @@ population_sf <- population |>
 ggplot() +
   #---The layer added later will come on top of the preceding layers---#
   geom_sf(data = Lima_multipolygons) +
-  geom_sf(data = population_sf) +
-  ggsn::blank()
+  geom_sf(data = population_sf) 
 
 ```
+## Tilting sf objects
+
+Following [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4) we will til each sf object by:
+  1. displace each point in a fixed direction, by an amount proportional to its signed distance from the line that is parallel to that direction and goes through the origin, while preserving the size of the area (shearing),
+  2. rotate each plane / layer, and
+  3. offset x and/or y axis.
+  
+  
+  
+::: {.column-margin}
+  Function to tilt sf objects, code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4)
+:::
+
+```{r tilting-function}
+#| label: tilting-function
+#| echo: false
+#| cap-location: margin
+#| code-fold: show
+
+rotate_data <- function(data, x_add = 0, y_add = 0) {
+  shear_matrix <- function() {
+    matrix(c(2, 1.2, 0, 1), 2, 2)
+  }
+  rotate_matrix <- function(x) {
+    matrix(c(cos(x), sin(x), -sin(x), cos(x)), 2, 2)
+  }
+  data %>%
+    dplyr::mutate(
+      geometry =
+        .$geometry * shear_matrix() * rotate_matrix(pi / 20) + c(x_add, y_add)
+    )
+}
+```
+
+
+
 
 <!-- ![Roads plot.](r`knitr::fig_chunk('Figs/roads-plot','png')`) -->
 
@@ -364,18 +406,17 @@ ggplot() +
   geom_sf(
     data = population_sf,
     aes(fill = layer,
-        alpha = 0.4), 
+        alpha = 0.8), 
     color = NA
-  ) +
+  )) +
   scale_fill_distiller(
-    palette = "Greens", 
+    palette = "YlOrBr", 
     direction = 1,
     guide = FALSE
   ) +
   geom_sf(data = roads_sf) +
   geom_sf(data = buildings_sf) +
-  theme(legend.position = "none") +
-  ggsn::blank() 
+  theme(legend.position = "none") 
 
 ```
 
