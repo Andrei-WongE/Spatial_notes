@@ -159,7 +159,7 @@ Now we can covert the GIS coordinates to CRS using `st_transform`
 #| code-fold: show
 
 # convert the GIS coordinates to CRS
-Lima_multipolygons <- st_transform(Lima_multipolygons, 24892) 
+Lima_multipolygons <- st_transform(Lima_multipolygons, "EPSG:24892") 
 
 Lima_multipolygons
 ```
@@ -250,7 +250,7 @@ roads_sf <- roads |>
   (\(x) osm_lines(x, x$osm_lines$osm_id))() |>
   # which means using other type of geometry
   dplyr::select(geometry) |>
-  st_transform(24892) |> 
+  st_transform("EPSG:24892") |> 
   st_intersection(Lima_multipolygons) |>          # only highways in the city
   dplyr::filter(st_is(geometry, c("LINESTRING"))) # assure only line geometry
 
@@ -298,7 +298,7 @@ buildings_sf <-
 buildings_sf <- buildings_sf |>  
   (\(x) osm_polygons(x, x$osm_polygons$osm_id))() |> 
   dplyr::select(geometry) |> 
-  st_transform(24892) |>  
+  st_transform("EPSG:24892") |>  
   st_intersection(Lima_multipolygons)
 ```
 
@@ -323,7 +323,12 @@ For obtaining population data we use data from the National Institute of Statist
 #| label: otaining-population-data
 #| code-fold: show
 
-  population <- st_as_sf(st_read(here("data", "EstratoLimaMetropolitanashp.shp"))) 
+  shp <- read_sf(here("data", "EstratoLimaMetropolitanashp.shp"))
+
+  shp <- st_transform(shp, "EPSG:24892") # Extra care is needed with the ESRI shapefile format, because WKT1 does not store axis order unambiguously.
+
+  st_layers(dsn = here("data", "EstratoLimaMetropolitanashp.shp"), do_count = TRUE)$name #Displays list of layers
+
 
 ```
 Population data is in geodetic CRS, we need to transform this data to Projected CRS. More details about the difference between these systems [here](https://www.earthdatascience.org/courses/use-data-open-source-python/intro-vector-data-python/spatial-data-vector-shapefiles/geographic-vs-projected-coordinate-reference-systems-python/).
@@ -332,8 +337,7 @@ Population data is in geodetic CRS, we need to transform this data to Projected 
 #| label: wrangling-population-data
 #| code-fold: show
 
-population_sf <- population |> 
-  st_transform(24892) |> # Extra care is needed with the ESRI Shapefile format, because WKT1 does not store axis order unambigiously.
+population_sf <- shp |>
   st_intersection(Lima_multipolygons)
 
 ```
@@ -348,20 +352,34 @@ population_sf <- population |>
 ggplot() +
   #---The layer added later will come on top of the preceding layers---#
   geom_sf(data = Lima_multipolygons) +
-  geom_sf(data = population_sf) 
+  geom_sf(data = population_sf, aes(fill = POB)) +
+  ggsn::blank()
 
 ```
 ## Tilting sf objects
 
-Following [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4) we will til each sf object by:
-  1. displace each point in a fixed direction, by an amount proportional to its signed distance from the line that is parallel to that direction and goes through the origin, while preserving the size of the area (shearing),
+Following [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4) we will tilt each sf object by:
+
+  1. Displace each point in a fixed direction, by an amount proportional to its signed distance from the line that is parallel to that direction and goes through the origin (plane angle), while preserving the size of the area (shearing),
   2. rotate each plane / layer, and
-  3. offset x and/or y axis.
+  3. offset x and y axis.
   
+We will apply this by using the following formula:
+
+ $$
+\begin{bmatrix} x & y \end{bmatrix} \times \begin{bmatrix} 1 & 0 \\ 1.2 & 1 \end{bmatrix} \times \begin{bmatrix} \cos(\pi/20) & \sin(\pi/20)\\-\sin(\pi/20) & \cos(\pi/20) \end{bmatrix} + \begin{bmatrix} x\_add & y\_add \end{bmatrix}
+ $$
+
+ 
+```{comment}
+Align equation with comments https://www.math.mcgill.ca/yyang/regression/RMarkdown/example.html
+```
   
   
 ::: {.column-margin}
-  Function to tilt sf objects, code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4)
+  Function to tilt sf objects code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4).
+  Consider that $\pi/20 = 9\°$ and that $\cos(\pi/20) \approx 0.987$ width and $\sin(\pi/20) \approx 0.156$ height in an unit circle.
+  
 :::
 
 ```{r tilting-function}
@@ -400,25 +418,25 @@ rotate_data <- function(data, x_add = 0, y_add = 0) {
 ```
 ## ggplot2
 
-```{r}
-ggplot() +
-  geom_sf(data = Lima_multipolygons) +
-  geom_sf(
-    data = population_sf,
-    aes(fill = layer,
-        alpha = 0.8), 
-    color = NA
-  )) +
-  scale_fill_distiller(
-    palette = "YlOrBr", 
-    direction = 1,
-    guide = FALSE
-  ) +
-  geom_sf(data = roads_sf) +
-  geom_sf(data = buildings_sf) +
-  theme(legend.position = "none") 
-
-```
+# ```{r}
+# ggplot() +
+#   geom_sf(data = Lima_multipolygons) +
+#   geom_sf(
+#     data = population_sf,
+#     aes(fill = population_sf$POB,
+#         alpha = 0.8), 
+#     color = NA
+#   ) +
+#   scale_fill_distiller(
+#     palette = "YlOrBr", 
+#     direction = 1,
+#     guide = FALSE
+#   ) +
+#   geom_sf(data = roads_sf) +
+#   geom_sf(data = buildings_sf) +
+#   theme(legend.position = "none") 
+# 
+# ```
 
 ## ggmap
 ## tmap
@@ -427,7 +445,18 @@ ggplot() +
 :::
 
 
-# Appendix:
+# Appendix
+
+<details>
+
+<summary>
+
+Reuse
+
+https://creativecommons.org/licenses/by/4.0/
+
+</summary>
+
 
 <details>
 
