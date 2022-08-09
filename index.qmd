@@ -5,45 +5,36 @@ date: "June 1, 2022"
 
 format:
   html:
-# Basic options
-    fontcolor: black
-    # By default, smooth scroll is not enabled
-    smooth-scroll: true
+    theme: lux
+    html-math-method: mathjax
+    css: headers.css
 # Add table of contents
     toc: true
     toc_float: true
+    toc-depth: 2
     toc-location: left
-# css selectors to change the header and TOC styles
-    css: headers.css
+    toc-title: "On this page"
     number-sections: true
+# By default smooth scroll is not enabled
     smooth-scroll: true
     link-external-icon: false
     link-external-newwindow: true
-    theme: lux
     highlight-style: github
 # Fold code (initially hidden)
     code-fold: true
-# Allow to download code
     code_download: yes
-# Code link to documentation   
     code-link: true
-# Tables printed as HTML tables with support for pagination
-    df_print: paged
-# Table options    
-    table-captions: true
+    table-captions: true 
     tbl-cap-location: margin
-# Places footnotes and cited sources in the margin
-# other layout options (for example placing a 
-# figure in the margin) will be set on per element
-# using cap-location margin
     reference-location: margin
-    citation-location: margin 
+    citation-location: margin
 # Text for footer
     include-after-body: footer.html
+
 # Allow for highlighting text. \hl{highlight} text inline.Or \hl{\textbf{highlight}} with bold face.
 # Allows fort commenting using hypothesis
 comments:
-  hypothesis: true
+  hypothesis: true 
 
 execute:
   warning: false
@@ -65,6 +56,7 @@ Note updated on `r knitted_when` from `r knitted_where` with knitr version `r kn
 
 ::: {.callout-note collapse="false"}
 ## General set-up of the program.
+
 These notes make use of the following R packages and general set-up.
 :::
 
@@ -101,7 +93,7 @@ These notes make use of the following R packages and general set-up.
   knitr::opts_chunk$set( dev       = "CairoPNG" # Alpha transparency in png
                         ,fig.path  = "Figs/"
                         ,dpi       = 600
-                        ,fig.width = 12
+                        ,fig.width = 10
                         ,fig.hight = 12
   # Automatically formatting code using styler
                         ,tidy      = "styler"
@@ -110,8 +102,8 @@ These notes make use of the following R packages and general set-up.
 ```
 
 # Obtaining data
-Using `osmdata` package you can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to <mark >raster tiles</mark>.
-For more information about `OpenStreetMap` see [here](http://blog.fellstat.com/?cat=15).
+
+Using `osmdata` package you can download data from [OSM](https://www.openstreetmap.org/about). Consider that this package provides access to vector data while the `OpenStreetMap` package to <mark >raster tiles</mark>. For more information about `OpenStreetMap` see [here](http://blog.fellstat.com/?cat=15).
 
 ```{r data}
 #| label: data
@@ -127,6 +119,7 @@ Lima <-
   osmdata_sf()                        # import as an sf object
 
 ```
+
 Dowloaded data timestamp: `r Lima$meta$timestamp`.
 
 # Obtaining boundaries
@@ -141,6 +134,7 @@ Lima_multipolygons <- Lima |>
   dplyr::select(geometry) 
 
 ```
+
 `suggest_crs()` from the **crsuggest package** returns the top 10 matches for a given input spatial dataset enabeling to browse the returned CRS option and use the EPSG/proj4string codes in your analysis. This package is usefull for customizing arguments (gcs and measurement units) as guessing the CRS of a dataset without projection information.
 
 ```{r crs}
@@ -152,6 +146,7 @@ possible_crs <- suggest_crs(Lima_multipolygons)
 kable(head(possible_crs, "simple"))
 
 ```
+
 Now we can covert the GIS coordinates to CRS using `st_transform`
 
 ```{r object}
@@ -164,11 +159,7 @@ Lima_multipolygons <- st_transform(Lima_multipolygons, "EPSG:24892")
 Lima_multipolygons
 ```
 
-
-See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). 
-See ESPG codes on [spatialreference.org](https://spatialreference.org/ref/epsg/).
-See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys.
-Search for feature in the following table.
+See [OPQ](https://wiki.openstreetmap.org/wiki/Overpass_API#Resource_management_options_.28osm-script.29) for explanation of timeout and memsize (or maxsize in overpass terms). See ESPG codes on [spatialreference.org](https://spatialreference.org/ref/epsg/). See [nominatim](https://nominatim.openstreetmap.org/ui/details.html?osmtype=N&osmid=4289361265&class=place) for **admin_level** keys. Search for feature in the following table.
 
 ```{r tbl-osm-features}
 #| label: tbl-osm-features
@@ -272,7 +263,7 @@ ggplot() +
 ```
 
 ```{r obtaining-buildings-data}
-#| label: adding-data-roads
+#| label: adding-data-buildings
 #| code-fold: show
 
 buildings_sf <-
@@ -331,6 +322,7 @@ For obtaining population data we use data from the National Institute of Statist
 
 
 ```
+
 Population data is in geodetic CRS, we need to transform this data to Projected CRS. More details about the difference between these systems [here](https://www.earthdatascience.org/courses/use-data-open-source-python/intro-vector-data-python/spatial-data-vector-shapefiles/geographic-vs-projected-coordinate-reference-systems-python/).
 
 ```{r wrangling-population-data}
@@ -352,34 +344,31 @@ population_sf <- shp |>
 ggplot() +
   #---The layer added later will come on top of the preceding layers---#
   geom_sf(data = Lima_multipolygons) +
-  geom_sf(data = population_sf, aes(fill = POB)) +
+  geom_sf(data = subset(population_sf, POB > 0), aes(fill = POB)) +
   ggsn::blank()
 
 ```
+
 ## Tilting sf objects
 
 Following [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4) we will tilt each sf object by:
 
-  1. Displace each point in a fixed direction, by an amount proportional to its signed distance from the line that is parallel to that direction and goes through the origin (plane angle), while preserving the size of the area (shearing),
-  2. rotate each plane / layer, and
-  3. offset x and y axis.
-  
+1.  Displace each point in a fixed direction, by an amount proportional to its signed distance from the line that is parallel to that direction and goes through the origin (plane angle), while preserving the size of the area (shearing),
+2.  rotate each plane / layer, and
+3.  offset x and y axis.
+
 We will apply this by using the following formula:
 
- $$
+$$
 \begin{bmatrix} x & y \end{bmatrix} \times \begin{bmatrix} 1 & 0 \\ 1.2 & 1 \end{bmatrix} \times \begin{bmatrix} \cos(\pi/20) & \sin(\pi/20)\\-\sin(\pi/20) & \cos(\pi/20) \end{bmatrix} + \begin{bmatrix} x\_add & y\_add \end{bmatrix}
- $$
+$$
 
- 
 ```{comment}
 Align equation with comments https://www.math.mcgill.ca/yyang/regression/RMarkdown/example.html
 ```
-  
-  
-::: {.column-margin}
-  Function to tilt sf objects code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4).
-  Consider that $\pi/20 = 9\°$ and that $\cos(\pi/20) \approx 0.987$ width and $\sin(\pi/20) \approx 0.156$ height in an unit circle.
-  
+
+::: column-margin
+Function to tilt sf objects code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4). Consider that $\pi/20 = 9\text{o}$ and that $\cos(\pi/20) \approx 0.987$ width and $\sin(\pi/20) \approx 0.156$ height in an unit circle.
 :::
 
 ```{r tilting-function}
@@ -388,7 +377,7 @@ Align equation with comments https://www.math.mcgill.ca/yyang/regression/RMarkdo
 #| cap-location: margin
 #| code-fold: show
 
-rotate_data <- function(data, x_add = 0, y_add = 0) {
+rotate_sf <- function(data, x_add = 0, y_add = 0) {
   shear_matrix <- function() {
     matrix(c(2, 1.2, 0, 1), 2, 2)
   }
@@ -403,68 +392,96 @@ rotate_data <- function(data, x_add = 0, y_add = 0) {
 }
 ```
 
-
-
-
 <!-- ![Roads plot.](r`knitr::fig_chunk('Figs/roads-plot','png')`) -->
 
 # Visualize data with sfmap, ggplot2, ggmap, tmap and leaflet
 
-::: {.panel-tabset}
-## sfmap
+::: panel-tabset
 
-```{r}
-
-```
 ## ggplot2
 
-# ```{r}
-# ggplot() +
-#   geom_sf(data = Lima_multipolygons) +
-#   geom_sf(
-#     data = population_sf,
-#     aes(fill = population_sf$POB,
-#         alpha = 0.8), 
-#     color = NA
-#   ) +
-#   scale_fill_distiller(
-#     palette = "YlOrBr", 
-#     direction = 1,
-#     guide = FALSE
-#   ) +
-#   geom_sf(data = roads_sf) +
-#   geom_sf(data = buildings_sf) +
-#   theme(legend.position = "none") 
-# 
-# ```
+```{r Plot-tilting-layers}
+#| label: Plot-tilting-layers
+#| echo: false
+#| cap-location: margin
+#| code-fold: show
+#| fig-width: 9
+#| fig-height: 8
+
+#Parameters, plot 1st with coordinates and retrieve x and initial y values
+x = 2320000
+
+# Plot tilted layers
+ggplot() +
+  #-----------First layer includes borders and roads---------------#
+  geom_sf(  data = Lima_multipolygons |> rotate_sf()
+          , fill = NA) +
+    geom_sf(data = roads_sf |> rotate_sf()) +
+    annotate("text"
+             , label = "Roads"
+             , x = x, y = 420000, hjust = 0, color = "CornflowerBlue") +
+    labs(caption = "Visualization by @Andrei-WongE") +
+  #-----------Second layer includes borders and buildings----------#
+  geom_sf(  data = Lima_multipolygons |> rotate_sf(y_add = 100000)
+          , fill = NA) +
+    geom_sf(data = rotate_sf(buildings_sf ,y_add = 100000)) +
+    annotate("text"
+             , label = "Buildings"
+             , x = x, y = 520000, hjust = 0, color = "CornflowerBlue") +
+  #-----------Third layer includes population---------------------#
+  geom_sf(  data = Lima_multipolygons |> rotate_sf(y_add = 200000)
+          , fill = NA) +
+    geom_sf(  data = subset(population_sf, POB > 0) |> rotate_sf(y_add = 200000)
+            , aes(  fill  = POB
+                  , alpha = .7)
+            , color = NA) +
+    scale_fill_viridis_c(option = "E", guide = "none") + #E = cividis
+    annotate("text"
+             , label = "Population"
+            , x = x, y = 620000, hjust = 0, color = "CornflowerBlue") +
+    # theme(legend.position = "none"
+    #      , plot.caption   = element_text(hjust = 0.5)) + #Centre align caption
+    # ggsn::blank()
+  #-----------Fourth layer includes socio-economic strata--------#
+  new_scale_fill()  +
+  new_scale_color() +
+  geom_sf(  data  = Lima_multipolygons |> rotate_sf(y_add = 300000)
+           , fill = NA) +
+    geom_sf(  data = subset(population_sf, POB > 0) |> rotate_sf(y_add = 300000)
+            , aes(  fill  = ESTR_INGPE
+                  , alpha = .7)
+            , color = NA) +
+    scale_fill_viridis_c(option = "A", guide = "none") + #A = magma
+    annotate("text"
+           , label = "Socio-economic strata (by income pc of households)"
+           , x = x, y = 720000, hjust = 0, color = "CornflowerBlue") +
+    coord_sf(clip = "off") +   # Keeps the annotation from disappearing
+    theme(  legend.position = "none"
+          , plot.caption  = element_text(hjust = 0.5)) + # Centre align caption
+    ggsn::blank()
+
+```
+## sfmap
 
 ## ggmap
+
 ## tmap
+
 ## leaflet
-
 :::
-
 
 # Appendix
 
 <details>
 
-<summary>
-
-Reuse
+<summary> Reuse</summary>
 
 https://creativecommons.org/licenses/by/4.0/
 
-</summary>
 
+</details>
 
-<details>
-
-<summary>
-
-All code for this report
-
-</summary>
+<summary>All code for this report</summary>
 
 ```{r ref.label = knitr::all_labels()}
 #| eval: false
@@ -475,11 +492,7 @@ All code for this report
 
 <details>
 
-<summary>
-
-Reproducibility receipt
-
-</summary>
+<summary>Reproducibility receipt</summary>
 
 ```{r Reproducibility receipt}
 #| echo: false
@@ -497,4 +510,6 @@ Reproducibility receipt
 
 </details>
 
-<div class="watermark">DRAFT</div>
+::: watermark
+DRAFT
+:::
