@@ -46,7 +46,9 @@ execute:
 # Set-up
 
 ```{r}
+#| label: timestamp-setup
 #| echo: false
+
 knitted_when <- format(Sys.Date())
 knitted_where <- knitr::current_input()
 knitted_with <- packageVersion("knitr")
@@ -55,11 +57,9 @@ knitted_doc_url <- downlit::autolink_url("knitr::knit()")
 
 Note updated on `r knitted_when` from `r knitted_where` with knitr version `r knitted_with`.
 
-::: {.callout-note collapse = "false"}
-## General set-up of the program.
+::: {.callout-note collapse = "false"} \## General set-up of the program.
 
-These notes make use of the following R packages and general set-up.
-:::
+These notes make use of the following R packages and general set-up. :::
 
 ```{r Set-up}
 #| label: set-up
@@ -358,7 +358,7 @@ $$
 \begin{bmatrix} x & y \end{bmatrix} \times \begin{bmatrix} 1 & 0 \\ 1.2 & 1 \end{bmatrix} \times \begin{bmatrix} \cos(\pi/20) & \sin(\pi/20)\\-\sin(\pi/20) & \cos(\pi/20) \end{bmatrix} + \begin{bmatrix} x\_add & y\_add \end{bmatrix}
 $$
 
-::: {.column-margin}
+::: column-margin
 Function to tilt sf objects code by [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#4). Consider that $\pi/20 = 9\text{o}$ and that $\cos(\pi/20) \approx 0.987$ width and $\sin(\pi/20) \approx 0.156$ height in an unit circle.
 :::
 
@@ -387,7 +387,7 @@ rotate_sf <- function(data, x_add = 0, y_add = 0) {
 
 # Visualize data with ggplot2, tmap, leaflet and sfmap
 
-::: {.panel-tabset}
+::: panel-tabset
 ## ggplot2
 
 ```{r Plot-tilting-layers}
@@ -478,7 +478,7 @@ ggplot() +
 ```{r ref.label = knitr::all_labels()}
 #| label: All-code
 #| eval: false
-#| code-fold:true
+#| code-fold: true
 ```
 
 </details>
@@ -504,4 +504,6 @@ ggplot() +
 
 </details>
 
-<div class="watermark">DRAFT</div>
+::: watermark
+DRAFT
+:::
