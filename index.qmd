@@ -62,7 +62,7 @@ knitted_doc_url <- downlit::autolink_url("knitr::knit()")
 
 Note updated on `r knitted_when` from `r knitted_where` with knitr version `r knitted_with`.
 
-::: {.callout-note collapse = "false"} 
+::: {.callout-note collapse = "false"}
 
 ## General set-up of the program.
 
@@ -88,6 +88,8 @@ These notes make use of the following R packages and general set-up. :::
                  ,sf         # DONT'T FORGET uses the s2geometry library
                  ,tmap       # For creating thematic maps
                  ,leaflet    # JavaScript libraries for interactive maps
+                 ,leafem     # Extensions for leaflet 
+                 ,simplevis  # Leaflet and ggplot2 functions wrapper
                  ,knitr
                  ,rvest      # For Web scrapping
                  ,DT         # R interface to the JavaScript library DataTables
@@ -147,6 +149,10 @@ Lima_multipolygons <- Lima |>
 
 `suggest_crs()` from the **crsuggest package** returns the top 10 matches for a given input spatial dataset enabeling to browse the returned CRS option and use the EPSG/proj4string codes in your analysis. This package is usefull for customizing arguments (gcs and measurement units) as guessing the CRS of a dataset without projection information.
 
+Consider also that the `st_crs` function allows the following:
+
+`st_crs(new_vector)$IsGeographic` # Checks if CRS is geographic or not `st_crs(new_vector)$units_gdal`   # Finds out the CRS units `st_crs(new_vector)$srid`         #Extracts its 'SRID' identifier `st_crs(new_vector)$proj4string`  # Extracts the proj-string representation
+
 ```{r crs}
 #| label: crs
 #| code-fold: show
@@ -189,7 +195,7 @@ datatable(features_list,
     ,dom = "ltipr"            # Deactivate search box
     )
   ,filter = "top"             # Deactivate search box
-  ,selection = "multiple",    # Deactivate search box
+  ,selection = "multiple"     # Deactivate search box
   ,escape = FALSE             # Deactivate search box
   ,width = "300px"
 )
@@ -363,17 +369,11 @@ Following [Stefan Jünger](https://stefanjuenger.github.io/gesis-workshop-geospa
 
 We will apply this by using the following formula:
 
-$$
-\require{mathtools}
-
-{\underbrace{%
-\vphantom{\begin{bmatrix} x & y \end{bmatrix}}_{\mathclap{\text{Coordinates}}}} \times 
-{\underbrace{%
-\begin{bmatrix} 1 & 0 \\ 1.2 & 1 \end{bmatrix}}_{(1)}} \times 
-{\underbrace{%
-\begin{bmatrix} \cos(\pi/20) & \sin(\pi/20)\\-\sin(\pi/20) & \cos(\pi/20) \end{bmatrix}}_{(2)}} +
-{\underbrace{%
-\vphantom{\begin{bmatrix} x\_add & y\_add \end{bmatrix}}_{\mathclap{(3)}}}}
+$$ 
+\begin{bmatrix} x & y \end{bmatrix}_{\text{Coordinates} \times  
+\begin{bmatrix} 1 & 0 \\ 1.2 & 1 \end{bmatrix}}_{(1)}} \times  
+\begin{bmatrix} \cos(\pi/20) & \sin(\pi/20)\\-\sin(\pi/20) & \cos(\pi/20) \end{bmatrix}_{(2)} + 
+\begin{bmatrix} x\_add & y\_add \end{bmatrix}_{(3)}
 $$
 
 ::: {.column-margin}
@@ -478,31 +478,66 @@ ggplot() +
 
 ## tmap
 
+Mapping income groups in an interactive map.
+
 ```{r tmap-plot}
 #| label: tmap-plot
 #| cap-location: margin
 #| code-fold: show
 
 # Set ESTR_INGPE and POB of less or equal than CERO to NA
-population_sf <- population_sf |> 
-  mutate(ESTR_INGPE = ifelse(ESTR_INGPE > 0, ESTR_INGPE, NA)) |> 
+population_sf <- population_sf |>
+  mutate(ESTR_INGPE = ifelse(ESTR_INGPE > 0, ESTR_INGPE, NA)) |>
   mutate(POB = ifelse(POB > 0, POB, NA))
 
 tmap_mode("view")
 tm_shape(population_sf) +
-    tm_polygons(c("ESTR_INGPE", "POB")
+    tm_borders() +
+    tm_polygons("ESTR_INGPE"
                 , colorNA = "grey75") +
-    tm_facets(sync = TRUE, ncol = 2)
+    # tm_facets(ncol = 2, sync = NA) +
+    tm_minimap() +
+    tm_mouse_coordinates()
 
 ```
 
-
 ## leaflet
+
+I will use `simplevis`, a leaflet and ggplot2 wrapper, to integrate both functions and apply it on a sf object.
+
+Using leaflet.minicharts to add and update small charts on an interactive maps created with the leaflet `package`. First I create a basemap
+
+For other zoom/pan options see [here](https://leafletjs.com/reference-1.3.4.html#zoom/pan-options).
+
+I add to the base map a pie chart for each district that represents the share of XXXXXX. We need to change the width of the pie chart so their area is proportional to the total XXXXX of the corresponding district.
+
+As [Spacedman](https://gis.stackexchange.com/questions/315509/r-leaflet-plot-with-etrs89) mentions: While tiles must be in the same projection as used in the leafletCRS function, **you must always use WGS 84 longitude/latitude data for markers, circles, polygons, and lines**. Leaflet will automatically project the coordinates when displaying.
+
+You should only use leafletCRS if your tiles are in a different coordinate system. The standard OSM ones -- and most others -- are in EPSG:3857 and so that's the default.
 
 ```{r leaflet-plot}
 #| label: leaflet-plot
 #| cap-location: margin
 #| code-fold: show
+
+# Upload data
+addr.geo_added <- read_csv(here("data", "addr_geo.csv")
+                           , col_names = TRUE)
+
+icons <- awesomeIcons(
+  icon = "ios-close",
+  iconColor = "black",
+  library = "ion",
+  # markerColor = getColor(addr.geo)
+)
+
+# Create map
+basemap <- leaflet(addr.geo_added) |> 
+  addTiles() |> 
+  addProviderTiles(providers$Stamen.Toner) |>  
+  addAwesomeMarkers(lng  = ~lon, lat = ~lat, 
+                    popup = ~id,
+                    icon  = icons)
 
 ```
 :::
